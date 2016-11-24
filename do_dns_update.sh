@@ -1,5 +1,5 @@
 #!/bin/bash
-# @requires awk, curl, grep, mktemp, sed, tr.
+# @requires awk, curl, grep, mktemp, sed, tr, dig.
 
 ## START EDIT HERE.
 do_access_token="";  # paste your DO Personal Access Token here.
@@ -74,7 +74,10 @@ json_value()
 
 get_external_ip()
 {
-  ip_address="$(curl -s --connect-timeout $curl_timeout $url_ext_ip | sed -e 's/.*Current IP Address: //' -e 's/<.*$//' | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')";
+  ip_address="$(dig @208.67.222.222 myip.opendns.com A +short)"
+  if [ -z "$ip_address" ] ; then
+    ip_address="$(curl -s --connect-timeout $curl_timeout $url_ext_ip | sed -e 's/.*Current IP Address: //' -e 's/<.*$//' | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')";
+  fi
   if [ -z "$ip_address" ] ; then
     ip_address="$(curl -s --connect-timeout $curl_timeout $url_ext_ip2 | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')";
     if [ -z "$ip_address" ] ; then
@@ -99,18 +102,21 @@ get_record()
     do_num_records=$loop_max_records;
   fi
 
+
   for i in `seq 1 $do_num_records`
   do
     record['name']="$(json_value name $i < $tmpfile)";
     if [ "${record[name]}" == "$do_record" ] ; then
-      record['id']="$(json_value id $i < $tmpfile)";
-      record['data']="$(json_value data $i < $tmpfile)";
+       record['type']="$(json_value type $i < $tmpfile)"
+      if [ "${record[type]}"  == "A" ] ; then
+        record['id']="$(json_value id $i < $tmpfile)";
+        record['data']="$(json_value data $i < $tmpfile)";
+      fi
 
       if [ ! -z "${record[id]}" ] && [[ "${record[id]}" =~ ^[0-9]+$ ]] ; then
         rm -f "$tmpfile";
         return 0;
       fi
-      break;
     fi
   done
 
