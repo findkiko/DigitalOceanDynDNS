@@ -184,7 +184,7 @@ if [ $update_only == true ] || [ $just_added != true ] ; then
   echov "* Comparing ${record[data]} to $ip_address";
   if [ "${record[data]}" == "$ip_address" ] ; then
     echov "Record $do_record.$do_domain already set to $ip_address";
-    exit 1;
+    exit 0;
   fi
 
   echov "* Updating record ${record[name]}.$do_domain to $ip_address";
